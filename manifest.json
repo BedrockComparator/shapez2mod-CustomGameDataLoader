@@ -1,0 +1,21 @@
+﻿{
+  "Title": "CustomResourcesLoader",
+  "Version": "1.0.0",
+  "Description": "A Code Library to allow MOD devs to add their custom resources(sprites, gameMechanics, etc.) into game.",
+  "Author": "Bedrock Comparator",
+  "AffectsSaveGames": false,
+  "DisablesAchievements": false,
+  "SaveGameCompabilityRange": "*",
+  "GameVersionSupportRange": ">=1.0.0",
+  "Assemblies": [
+    "CustomGameDataLoader.dll"
+  ],
+  "Dependencies": [
+    {
+      "ModId": "steam:3542611357",
+      "ModTitle": "Shapez Shifter",
+      "Version": "1.0.*"
+    }
+  ],
+  "Conflicts": []
+}
