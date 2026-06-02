@@ -7,27 +7,29 @@ using System;
 
 namespace CustomGameDataLoader
 {
-    public class CustomGameDataLoaderMod:IMod
+    public class CustomGameDataLoaderMod : IMod
     {
         Hook HookPostfixGameDataInitialization;
+
         public CustomGameDataLoaderMod(Core.Logging.ILogger logger)
         {
+            CustomGameDataRegistrar.Logger = logger;
+
             HookPostfixGameDataInitialization = DetourHelper.CreatePostfixHook<LoadGameDataBlindStep, IDependencyContainer, UniTask>(
-                original: (self,dc)=>self.Execute(dc),
+                original: (self, dc) => self.Execute(dc),
                 postfix: (self, dc, ret) =>
                 {
                     logger?.Info?.Log("Custom GameData Injection Begin");
                     GameData gameData = (GameData)dc.Resolve<IGameData>();
-                    CustomGameDataRegistrar.OnGameDataInitlize(gameData);
-                    //Example: Inject a sprite to gameData._Images, should be replaced by CustomGameDataRegistrar.OnGameDataInitialize
-                    //gameData._Images.Add(new Game.Core.Research.GameImageId("OperatorBadgeClassicTest"), FileTextureLoader.LoadTextureAsSprite(path, out _));
+                    CustomGameDataRegistrar.OnGameDataInitialize(gameData);
                     logger?.Info?.Log("Custom GameData Injection Complete");
                     return ret;
                 }
             );
+
             logger?.Info?.Log("CustomGameDataLoaderMod Initialized.");
         }
-        
+
         void IDisposable.Dispose()
         {
             HookPostfixGameDataInitialization?.Dispose();

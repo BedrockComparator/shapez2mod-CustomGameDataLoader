@@ -135,6 +135,10 @@
 			<HintPath>$(SPZ2_PATH)\MainMenuAssembly.dll</HintPath>
 			<private>False</private>
 		</Reference>
+		<Reference Include="UnityEngine.VideoModule">
+		  <HintPath>E:\SteamLibrary\steamapps\common\shapez 2\shapez 2_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
+			<private>False</private>
+		</Reference>
 
 		<Publicize Include="SPZGameAssembly:GameData._DifficultyPresets" />
 		<Publicize Include="SPZGameAssembly:GameData._WikiEntries" />
@@ -148,6 +152,7 @@
 	    <Publicize Include="SPZGameAssembly:GameData._UnlockableStoreContents" />
 	    <Publicize Include="SPZGameAssembly:GameData._Icons" />
 		<Publicize Include="SPZGameAssembly:GameIconCollection.AddIcon" />
+		<Publicize Include="SPZGameAssembly:GameIconCollection._Icons" />
 	</ItemGroup>
 	<PropertyGroup>
 		<OutputPath>$(SPZ2_PERSISTENT)\mods\CustomGameDataLoader</OutputPath>

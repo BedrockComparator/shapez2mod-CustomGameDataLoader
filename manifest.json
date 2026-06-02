@@ -1,7 +1,7 @@
 ﻿{
   "Title": "CustomResourcesLoader",
   "Version": "1.0.0",
-  "Description": "A Code Library to allow MOD devs to add their custom resources(sprites, gameMechanics, etc.) into game.",
+  "Description": "A Code Library that provides API to add/modify global GameData resources(sprites, wiki entries, colorschemes, etc.).",
   "Author": "Bedrock Comparator",
   "AffectsSaveGames": false,
   "DisablesAchievements": false,
