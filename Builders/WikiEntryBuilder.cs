@@ -33,7 +33,10 @@ namespace CustomResourcesLoader.Builders
 
         // ── Entry points ──────────────────────────────────────
 
-        /// <summary>Create a new empty MetaWikiEntry with the given ID.</summary>
+        /// <summary>
+        /// Create a new empty MetaWikiEntry with the given ID.
+        /// The translation key of the entry will be $"@wiki.{id}.title"
+        /// </summary>
         public static WikiEntryBuilder Create(string entryId)
         {
             if (string.IsNullOrEmpty(entryId))
