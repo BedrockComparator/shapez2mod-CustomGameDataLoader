@@ -1,6 +1,6 @@
 ﻿{
   "Title": "CustomResourcesLoader",
-  "Version": "1.0.0",
+  "Version": "1.1.2",
   "Description": "A Code Library that provides API to add/modify global GameData resources(sprites, wiki entries, colorschemes, etc.).",
   "Author": "Bedrock Comparator",
   "AffectsSaveGames": false,
@@ -14,7 +14,7 @@
     {
       "ModId": "steam:3542611357",
       "ModTitle": "Shapez Shifter",
-      "Version": "1.0.*"
+      "Version": ">=1.0.0"
     }
   ],
   "Conflicts": []

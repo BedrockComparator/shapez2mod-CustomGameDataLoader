@@ -43,6 +43,14 @@
 			<HintPath>$(SPZ2_PATH)\Game.Core.dll</HintPath>
 			<private>False</private>
 		</Reference>
+		<Reference Include="Game.Core.Content">
+			<HintPath>$(SPZ2_PATH)\Game.Core.Content.dll</HintPath>
+			<private>False</private>
+		</Reference>
+		<Reference Include="Game.Core.HUD">
+			<HintPath>$(SPZ2_PATH)\Game.Core.HUD.dll</HintPath>
+			<private>False</private>
+		</Reference>
 		<Reference Include="Game.Core.Coordinates">
 			<HintPath>$(SPZ2_PATH)\Game.Core.Coordinates.dll</HintPath>
 			<private>False</private>
@@ -104,7 +112,7 @@
 			<private>False</private>
 		</Reference>
 		<Reference Include="MonoMod.RuntimeDetour">
-			<HintPath>E:\SteamLibrary\steamapps\workshop\content\2162800\3542712030\MonoMod.RuntimeDetour.dll</HintPath>
+			<HintPath>$(SPZ2_MONODETOUR)</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="ShapezShifter">
@@ -136,7 +144,7 @@
 			<private>False</private>
 		</Reference>
 		<Reference Include="UnityEngine.VideoModule">
-		  <HintPath>E:\SteamLibrary\steamapps\common\shapez 2\shapez 2_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
+		  <HintPath>$(SPZ2_PATH)\UnityEngine.VideoModule.dll</HintPath>
 			<private>False</private>
 		</Reference>
 
@@ -149,10 +157,11 @@
 		<Publicize Include="SPZGameAssembly:GameData._GameRules" />
 	    <Publicize Include="SPZGameAssembly:GameData._TutorialConfigs" />
 	    <Publicize Include="SPZGameAssembly:GameData._GameModes" />
-	    <Publicize Include="SPZGameAssembly:GameData._UnlockableStoreContents" />
+
 	    <Publicize Include="SPZGameAssembly:GameData._Icons" />
 		<Publicize Include="SPZGameAssembly:GameIconCollection.AddIcon" />
 		<Publicize Include="SPZGameAssembly:GameIconCollection._Icons" />
+	    <Publicize Include="SPZGameAssembly:EditorDict`2._CachedEntries" />
 	</ItemGroup>
 	<PropertyGroup>
 		<OutputPath>$(SPZ2_PERSISTENT)\mods\CustomGameDataLoader</OutputPath>

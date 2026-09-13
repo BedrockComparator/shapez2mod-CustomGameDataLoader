@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Core.Localization;
+using Game.Core.Content.Buildings;
 using Game.Core.Research;
 using Game.Core.Research.Content;
 using Game.Core.Tutorial.Runtime;

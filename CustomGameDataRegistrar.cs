@@ -1,7 +1,6 @@
 using Game.Core.GameData.GameModeDefinition;
 using Game.Core.GameData.Presets;
 using Game.Core.Research;
-using Global.Store;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -101,14 +100,6 @@ namespace CustomGameDataLoader
             void ReplaceGameMode(string id, GameModeDefinition mode);
             void AddOrReplaceGameMode(GameModeId id, GameModeDefinition mode);
             void AddOrReplaceGameMode(string id, GameModeDefinition mode);
-
-            // ── UnlockableStoreContents ───────
-            void AddUnlockableStoreContent(UnlockableStoreContentId id, IUnlockableStoreContent content);
-            void AddUnlockableStoreContent(string id, IUnlockableStoreContent content);
-            void ReplaceUnlockableStoreContent(UnlockableStoreContentId id, IUnlockableStoreContent content);
-            void ReplaceUnlockableStoreContent(string id, IUnlockableStoreContent content);
-            void AddOrReplaceUnlockableStoreContent(UnlockableStoreContentId id, IUnlockableStoreContent content);
-            void AddOrReplaceUnlockableStoreContent(string id, IUnlockableStoreContent content);
 
             // ── DifficultyPresets (list-backed) ──
             void AppendDifficultyPreset(GameDifficultyPreset preset);
@@ -465,43 +456,6 @@ namespace CustomGameDataLoader
             }
             public void AddOrReplaceGameMode(string id, GameModeDefinition mode) => AddOrReplaceGameMode(new GameModeId(id), mode);
 
-            // ── UnlockableStoreContents ────────────────────────
-            public void AddUnlockableStoreContent(UnlockableStoreContentId id, IUnlockableStoreContent content)
-            {
-                if (_gameData._UnlockableStoreContents.TryAdd(id, content))
-                    _tracker.RecordAdd(Categories.UnlockableStoreContents, id.Id);
-                else
-                    throw new InvalidOperationException($"UnlockableStoreContent with id '{id.Id}' already exists.");
-            }
-            public void AddUnlockableStoreContent(string id, IUnlockableStoreContent content) => AddUnlockableStoreContent(new UnlockableStoreContentId(id), content);
-
-            public void ReplaceUnlockableStoreContent(UnlockableStoreContentId id, IUnlockableStoreContent content)
-            {
-                if (_gameData._UnlockableStoreContents.ContainsKey(id))
-                {
-                    _gameData._UnlockableStoreContents[id] = content;
-                    _tracker.RecordReplace(Categories.UnlockableStoreContents, id.Id);
-                }
-                else
-                    throw new InvalidOperationException($"UnlockableStoreContent with id '{id.Id}' does not exist.");
-            }
-            public void ReplaceUnlockableStoreContent(string id, IUnlockableStoreContent content) => ReplaceUnlockableStoreContent(new UnlockableStoreContentId(id), content);
-
-            public void AddOrReplaceUnlockableStoreContent(UnlockableStoreContentId id, IUnlockableStoreContent content)
-            {
-                if (_gameData._UnlockableStoreContents.ContainsKey(id))
-                {
-                    _gameData._UnlockableStoreContents[id] = content;
-                    _tracker.RecordReplace(Categories.UnlockableStoreContents, id.Id);
-                }
-                else
-                {
-                    _gameData._UnlockableStoreContents[id] = content;
-                    _tracker.RecordAdd(Categories.UnlockableStoreContents, id.Id);
-                }
-            }
-            public void AddOrReplaceUnlockableStoreContent(string id, IUnlockableStoreContent content) => AddOrReplaceUnlockableStoreContent(new UnlockableStoreContentId(id), content);
-
             // ── DifficultyPresets (list-backed) ─────────────────
             public void AppendDifficultyPreset(GameDifficultyPreset preset)
             {
@@ -522,7 +476,6 @@ namespace CustomGameDataLoader
             public const string Images = "Images";
             public const string ShapesConfigurations = "ShapesConfigurations";
             public const string TutorialConfigs = "TutorialConfigs";
-            public const string UnlockableStoreContents = "UnlockableStoreContents";
             public const string Videos = "Videos";
             public const string WikiEntries = "WikiEntries";
 
@@ -536,7 +489,6 @@ namespace CustomGameDataLoader
                 Images,
                 ShapesConfigurations,
                 TutorialConfigs,
-                UnlockableStoreContents,
                 Videos,
                 WikiEntries,
             };
