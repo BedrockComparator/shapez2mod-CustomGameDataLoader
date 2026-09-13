@@ -1,7 +1,7 @@
 ﻿{
   "Title": "CustomResourcesLoader",
-  "Version": "1.1.2",
-  "Description": "A Code Library that provides API to add/modify global GameData resources(sprites, wiki entries, colorschemes, etc.).",
+  "Version": "1.2.0",
+  "Description": "A Code Library that provides API to add/modify global GameData resources and supports referencing custom json file to modularize scenario config.",
   "Author": "Bedrock Comparator",
   "AffectsSaveGames": false,
   "DisablesAchievements": false,

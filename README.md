@@ -2,6 +2,10 @@
 
 A shapez 2 mod that provides an API framework for other mods to inject custom GameData resources at runtime — without Unity Editor asset workflow.
 
+From v1.2.0 : Provides access to json files provided by mods, making it easier to decompose large scenario config json file into many parts.
+Usage: `#include:MOD@path\to\file` in the scenario json file, where MOD is the entrypoint class(the only one implements IMod) name
+and path\to\file is relative path from the target mod's root directory.
+
 ## Architecture
 
 ```
@@ -23,6 +27,8 @@ Game Loads → LoadGameDataBlindStep.Execute (original)
 Registration is **open during mod construction only**. Once `OnGameDataInitialize` fires, the registrar freezes and further `Register()` calls throw.
 
 ## Quick Start (for third-party mods)
+
+### Resources Loading
 
 ```csharp
 public class MyMod : IMod
@@ -50,6 +56,46 @@ public class MyMod : IMod
 ```
 
 No dependency on `CustomGameDataLoaderMod` — just reference the DLL and register callbacks.
+
+### Scenario JSON "#include" redirection
+
+No C# code is required for mods that **reference** the files. 
+But mods that **provide** the files must implement `IMod` interface to be recognized by the redirection system. 
+
+A mod can also reference its own files to achieve modularization. In this case, the mod must implement `IMod` interface as well.
+
+Example:
+
+```csharp
+namespace ExampleProviderMod
+{
+    public class ExampleProviderMod : IMod
+    {
+        public ExampleProviderMod()
+        {
+        }
+        public void Dispose()
+        {
+        }
+    }
+}
+```
+And its file structure:
+```
+ExampleProviderMod/
+├── scenarios/
+│   ├── common/
+│   │   ├── researchConfig
+│   │   ├── milestones
+│   │   └── ...
+│   └── ...
+├── ExampleProviderMod.dll
+└── ...
+```
+To reference file like `scenarios/common/researchConfig` in another mod's scenario json file:
+```
+#include:ExampleProviderMod@scenarios/common/researchConfig
+```
 
 ## IGameDataHelper API
 
@@ -171,6 +217,8 @@ Clone entry points:
 
 ### MetaVideoDefinitionBuilder
 
+**This builder API hasn't been tested completely. Issue if you encounter any problems.**
+
 ```csharp
 var video = MetaVideoDefinitionBuilder.Create()
     .SetVideo(myVideoClip)
@@ -191,6 +239,8 @@ Clone entry points:
 
 ### MetaShapeSubPartBuilder
 
+**This builder API hasn't been tested completely. Issue if you encounter any problems.**
+
 ```csharp
 var part = MetaShapeSubPartBuilder.Create()
     .SetCode('C')
@@ -210,6 +260,8 @@ Clone entry point: `CloneFrom(MetaShapeSubPart original)`
 
 ### MetaShapesConfigurationBuilder
 
+**This builder API hasn't been tested completely. Issue if you encounter any problems.**
+
 ```csharp
 var config = MetaShapesConfigurationBuilder.Create()
     .SetPartCount(4)  // must be even, 1-32
@@ -226,6 +278,8 @@ Clone entry point: `CloneFrom(MetaShapesConfiguration original)`
 
 ### MetaShapeColorBuilder
 
+**This builder API hasn't been tested completely. Issue if you encounter any problems.**
+
 ```csharp
 var color = MetaShapeColorBuilder.Create()
     .SetCode('r')
@@ -240,6 +294,8 @@ Default material: `ShapeShaderMaterialType.NormalColor`.
 Clone entry point: `CloneFrom(MetaShapeColor original)`
 
 ### MetaShapeColorSchemeBuilder
+
+**This builder API hasn't been tested completely. Issue if you encounter any problems.**
 
 **CloneFrom is the recommended path.** Color schemes have complex visualization data (`MetaShapeColorVisualizationScheme` per `ColorVisualizationSchemeType`) that is difficult to construct manually. `CloneFrom` now deep-clones the visualization scheme objects so modifications don't affect the original.
 
@@ -256,6 +312,8 @@ var scheme = MetaShapeColorSchemeBuilder.CloneFrom(originalScheme)
 ```
 
 #### Color registration
+
+**This builder API hasn't been tested completely. Issue if you encounter any problems.**
 
 Three equivalent styles — individual methods, typed `AddColor`, or both:
 
@@ -327,6 +385,7 @@ CustomGameDataLoader/
 ├── CustomGameDataLoader.csproj
 ├── CustomGameDataLoaderMod.cs      (mod entry point + detour)
 ├── CustomGameDataRegistrar.cs      (IGameDataHelper + registrar)
+├── JsonRedirector.cs               (json #include redirector)
 └── manifest.json
 ```
 
