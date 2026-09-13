@@ -46,8 +46,12 @@ public class MyMod : IMod
 
             helper.AddWikiEntry("MyEntry", entry);//The entry can be referenced in scenario.json by "MyEntry"
 
+            //Notice: The id used in `Create()` will determine the translation key of the entry,
+            //        but the id used in `Add*`/`Replace*` will determine the id to be referenced in scenario.json .
+            //        They can be different, but it's recommended to keep them the same for clarity.
+
             // Or replace an existing one
-            helper.ReplaceImage("MyImage", mySprite);//The sprite can be referenced in scenario.json by "MySprite"
+            helper.ReplaceImage("MyImage", mySprite);//The sprite can be referenced in scenario.json by "MyImage"
         });
     }
 
@@ -90,9 +94,10 @@ ExampleProviderMod/
 │   │   └── ...
 │   └── ...
 ├── ExampleProviderMod.dll
+├── manifest.json
 └── ...
 ```
-To reference file like `scenarios/common/researchConfig` in another mod's scenario json file:
+To reference the file like `scenarios/common/researchConfig` in another mod's scenario json file:
 ```
 #include:ExampleProviderMod@scenarios/common/researchConfig
 ```
