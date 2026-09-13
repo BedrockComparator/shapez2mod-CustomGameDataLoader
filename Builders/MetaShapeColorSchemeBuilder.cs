@@ -17,6 +17,13 @@ namespace CustomResourcesLoader.Builders
     /// </remarks>
     public class MetaShapeColorSchemeBuilder
     {
+        public enum ColorType
+        {
+            Primary,
+            Secondary,
+            Tertiary
+        }
+
         private MetaShapeColorScheme _instance;
         private List<MetaShapeColor> _primaryColors = new List<MetaShapeColor>();
         private List<MetaShapeColor> _secondaryColors = new List<MetaShapeColor>();
@@ -35,6 +42,10 @@ namespace CustomResourcesLoader.Builders
         {
             var b = new MetaShapeColorSchemeBuilder();
             b._instance = ScriptableObject.CreateInstance<MetaShapeColorScheme>();
+            // ScriptableObject.CreateInstance does not call OnAfterDeserialize,
+            // so EditorDict._CachedEntries is null; initialize it explicitly.
+            b._instance.VisualizationSchemes._CachedEntries
+                = new Dictionary<ColorVisualizationSchemeType, MetaShapeColorVisualizationScheme>();
             return b;
         }
 
@@ -47,6 +58,13 @@ namespace CustomResourcesLoader.Builders
             if (original == null) throw new ArgumentNullException(nameof(original));
             var b = new MetaShapeColorSchemeBuilder();
             b._instance = UnityEngine.Object.Instantiate(original);
+
+            // Deep-clone visualization schemes so modifications don't affect the original
+            foreach (var kvp in b._instance.VisualizationSchemes._CachedEntries.ToList())
+            {
+                b._instance.VisualizationSchemes._CachedEntries[kvp.Key] = UnityEngine.Object.Instantiate(kvp.Value);
+            }
+
             b._primaryColors = new List<MetaShapeColor>(original.PrimaryColors);
             b._secondaryColors = new List<MetaShapeColor>(original.SecondaryColors);
             b._tertiaryColors = new List<MetaShapeColor>(original.TertiaryColors);
@@ -91,6 +109,35 @@ namespace CustomResourcesLoader.Builders
             return this;
         }
 
+        /// <summary>
+        /// Add a color to the scheme, routing it to the appropriate list based on <paramref name="type"/>.
+        /// Optionally also marks it as player-obtainable (default true).
+        /// </summary>
+        public MetaShapeColorSchemeBuilder AddColor(MetaShapeColor color, ColorType type, bool playerObtainable = true)
+        {
+            if (color == null) throw new ArgumentNullException(nameof(color));
+
+            switch (type)
+            {
+                case ColorType.Primary:
+                    _primaryColors.Add(color);
+                    break;
+                case ColorType.Secondary:
+                    _secondaryColors.Add(color);
+                    break;
+                case ColorType.Tertiary:
+                    _tertiaryColors.Add(color);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
+            }
+
+            if (playerObtainable)
+                _playerObtainableColors.Add(color);
+
+            return this;
+        }
+
         /// <summary>Remove all colors and mixing rules. Useful when starting from a clone but replacing colors entirely.</summary>
         public MetaShapeColorSchemeBuilder ClearColors()
         {
@@ -108,6 +155,16 @@ namespace CustomResourcesLoader.Builders
         /// <summary>Define the mixing result of two colors. Every color pair must have exactly one result defined.</summary>
         public MetaShapeColorSchemeBuilder AddMixResult(MetaShapeColor color1, MetaShapeColor color2, MetaShapeColor result)
         {
+            var existingPairs = new HashSet<(MetaShapeColor, MetaShapeColor)>();
+            foreach (var m in _mixResults)
+            {
+                existingPairs.Add((m.Color1, m.Color2));
+                existingPairs.Add((m.Color2, m.Color1));
+            }
+            if (existingPairs.Contains((color1, color2)))
+            {
+                throw new InvalidOperationException($"Unordered mixResult {color1.Code} + {color2.Code} already exists.");
+            }
             _mixResults.Add((color1 ?? throw new ArgumentNullException(nameof(color1)),
                              color2 ?? throw new ArgumentNullException(nameof(color2)),
                              result ?? throw new ArgumentNullException(nameof(result))));
@@ -121,6 +178,47 @@ namespace CustomResourcesLoader.Builders
             return this;
         }
 
+        /// <summary>
+        /// Fill every color pair that does NOT yet have an explicit <see cref="AddMixResult"/>
+        /// with <paramref name="defaultResult"/>. When <paramref name="defaultResult"/> is null,
+        /// <see cref="DefaultColor"/> is used.
+        /// </summary>
+        public MetaShapeColorSchemeBuilder SetDefaultMixResult(MetaShapeColor? defaultResult = null)
+        {
+            var result = defaultResult ?? _defaultColor;
+            if (result == null)
+                throw new InvalidOperationException(
+                    "DefaultColor must be set before calling SetDefaultMixResult without an explicit defaultResult.");
+
+            var allColors = new HashSet<MetaShapeColor>();
+            foreach (var c in _primaryColors) allColors.Add(c);
+            foreach (var c in _secondaryColors) allColors.Add(c);
+            foreach (var c in _tertiaryColors) allColors.Add(c);
+
+            var existingPairs = new HashSet<(MetaShapeColor, MetaShapeColor)>();
+            foreach (var m in _mixResults)
+            {
+                existingPairs.Add((m.Color1, m.Color2));
+                existingPairs.Add((m.Color2, m.Color1));
+            }
+
+            foreach (var c1 in allColors)
+            {
+                foreach (var c2 in allColors)
+                {
+                    if (!existingPairs.Contains((c1, c2)))
+                    {
+                        _mixResults.Add((c1, c2, result));
+                        existingPairs.Add((c1, c2));
+                        existingPairs.Add((c2, c1));
+                    }
+                        
+                }
+            }
+
+            return this;
+        }
+
         // ── Visualization schemes ─────────────────────────────
 
         /// <summary>
@@ -131,8 +229,96 @@ namespace CustomResourcesLoader.Builders
             ColorVisualizationSchemeType type,
             MetaShapeColorVisualizationScheme scheme)
         {
-            _instance.VisualizationSchemes[type] = scheme ?? throw new ArgumentNullException(nameof(scheme));
+            _instance.VisualizationSchemes._CachedEntries[type] = scheme ?? throw new ArgumentNullException(nameof(scheme));
             return this;
+        }
+
+        /// <summary>
+        /// Set the full <see cref="MetaShapeColorVisualizationScheme.ColorRenderData"/> for a color
+        /// across one or more visualization scheme types. Creates the target visualization scheme
+        /// if it does not already exist.
+        /// </summary>
+        public MetaShapeColorSchemeBuilder SetRenderData(
+            MetaShapeColor color,
+            IReadOnlyDictionary<ColorVisualizationSchemeType, MetaShapeColorVisualizationScheme.ColorRenderData> renderDataByScheme)
+        {
+            if (color == null) throw new ArgumentNullException(nameof(color));
+            if (renderDataByScheme == null) throw new ArgumentNullException(nameof(renderDataByScheme));
+
+            foreach (var kvp in renderDataByScheme)
+            {
+                EnsureVisualizationScheme(kvp.Key);
+                _instance.VisualizationSchemes._CachedEntries[kvp.Key].RenderData._CachedEntries[color] = kvp.Value;
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Set only the display <see cref="Color"/> for a color in one or more visualization scheme types,
+        /// preserving the existing <see cref="MetaShapeColorRenderData"/>. If no render-data entry exists
+        /// for the color yet, one is created with a null <see cref="MetaShapeColorRenderData"/>.
+        /// </summary>
+        public MetaShapeColorSchemeBuilder SetRenderColor(
+            MetaShapeColor color,
+            IReadOnlyDictionary<ColorVisualizationSchemeType, Color> colorsByScheme)
+        {
+            if (color == null) throw new ArgumentNullException(nameof(color));
+            if (colorsByScheme == null) throw new ArgumentNullException(nameof(colorsByScheme));
+
+            foreach (var kvp in colorsByScheme)
+            {
+                EnsureVisualizationScheme(kvp.Key);
+                var renderDataDict = _instance.VisualizationSchemes._CachedEntries[kvp.Key].RenderData._CachedEntries;
+
+                if (renderDataDict.TryGetValue(color, out var existing))
+                {
+                    existing.Color = kvp.Value;
+                    renderDataDict[color] = existing;
+                }
+                else
+                {
+                    renderDataDict[color] = new MetaShapeColorVisualizationScheme.ColorRenderData
+                    {
+                        Color = kvp.Value,
+                    };
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Copy all visualization-scheme render-data entries from one color to another.
+        /// The target color's entries are replaced with the source color's values (struct copy).
+        /// </summary>
+        public MetaShapeColorSchemeBuilder CopyVisualizationScheme(MetaShapeColor from, MetaShapeColor to)
+        {
+            if (from == null) throw new ArgumentNullException(nameof(from));
+            if (to == null) throw new ArgumentNullException(nameof(to));
+
+            foreach (var schemeKvp in _instance.VisualizationSchemes._CachedEntries)
+            {
+                var renderDataDict = schemeKvp.Value.RenderData._CachedEntries;
+                if (renderDataDict.TryGetValue(from, out var renderData))
+                {
+                    renderDataDict[to] = renderData;
+                }
+            }
+
+            return this;
+        }
+
+        private void EnsureVisualizationScheme(ColorVisualizationSchemeType type)
+        {
+            if (!_instance.VisualizationSchemes._CachedEntries.ContainsKey(type))
+            {
+                var vizScheme = ScriptableObject.CreateInstance<MetaShapeColorVisualizationScheme>();
+                vizScheme.RenderData = new EditorDict<MetaShapeColor, MetaShapeColorVisualizationScheme.ColorRenderData>();
+                vizScheme.RenderData._CachedEntries
+                    = new Dictionary<MetaShapeColor, MetaShapeColorVisualizationScheme.ColorRenderData>();
+                _instance.VisualizationSchemes._CachedEntries[type] = vizScheme;
+            }
         }
 
         // ── Build ─────────────────────────────────────────────

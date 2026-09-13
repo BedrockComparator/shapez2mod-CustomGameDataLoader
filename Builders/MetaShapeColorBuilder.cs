@@ -6,6 +6,11 @@ namespace CustomResourcesLoader.Builders
     /// <summary>
     /// Fluent builder for constructing <see cref="MetaShapeColor"/> instances at runtime.
     /// </summary>
+    /// <remarks>
+    /// <see cref="MetaShapeColor"/> only owns code and material. Render data (per-visualization-scheme
+    /// <see cref="MetaShapeColorRenderData"/> and display <see cref="Color"/>) is held by
+    /// <see cref="MetaShapeColorScheme"/> — configure it via <see cref="MetaShapeColorSchemeBuilder"/>.
+    /// </remarks>
     public class MetaShapeColorBuilder
     {
         private MetaShapeColor _instance;

@@ -53,7 +53,7 @@ No dependency on `CustomGameDataLoaderMod` — just reference the DLL and regist
 
 ## IGameDataHelper API
 
-All 11 resource types support three operations × two ID overloads:
+All 10 resource types support three operations × two ID overloads:
 
 | Operation | Behavior |
 |-----------|----------|
@@ -83,7 +83,6 @@ helper.AddImage("MyImage", sprite);                    // string shortcut
 | TutorialConfigs | `TutorialConfigId` → `MetaTutorialConfig` | `Dictionary` |
 | GameRules | `GameRuleId` → `MetaGameRule` | `Dictionary` |
 | GameModes | `GameModeId` → `GameModeDefinition` | `Dictionary` |
-| UnlockableStoreContents | `UnlockableStoreContentId` → `IUnlockableStoreContent` | `Dictionary` |
 | DifficultyPresets | (list) → `GameDifficultyPreset` | `List` (append only) |
 
 `DifficultyPresets` is list-backed — use `AppendDifficultyPreset(preset)` to add.
@@ -117,7 +116,6 @@ Resource registration summary:
   Images: +2 ~1
   ShapesConfigurations: +1 ~0
   TutorialConfigs: +0 ~0
-  UnlockableStoreContents: +0 ~0
   Videos: +0 ~0
   WikiEntries: +3 ~0
 ```
@@ -180,7 +178,7 @@ var video = MetaVideoDefinitionBuilder.Create()
         .SetKeybinding("interact.confirm")
         .SetStartTime(1500)
         .SetDuration(3000)
-        .SetPosition(HUDVideoMarkerPosition.BottomCenter)
+        .SetPosition(HudVideoMarkerPosition.BottomCenter)
         .SetVisibleWhileHidden(false))
     .Build("Video.MyTutorial");
 ```
@@ -210,19 +208,6 @@ Defaults: `AllowColor = true`, `AllowChangingColor = true`, `Material = NormalCo
 
 Clone entry point: `CloneFrom(MetaShapeSubPart original)`
 
-### MetaShapeColorBuilder
-
-```csharp
-var color = MetaShapeColorBuilder.Create()
-    .SetCode('r')
-    .SetMaterial(ShapeShaderMaterialType.NormalColor)
-    .Build("Color.Red");
-```
-
-Default material: `ShapeShaderMaterialType.NormalColor`.
-
-Clone entry point: `CloneFrom(MetaShapeColor original)`
-
 ### MetaShapesConfigurationBuilder
 
 ```csharp
@@ -239,25 +224,94 @@ var config = MetaShapesConfigurationBuilder.Create()
 
 Clone entry point: `CloneFrom(MetaShapesConfiguration original)`
 
+### MetaShapeColorBuilder
+
+```csharp
+var color = MetaShapeColorBuilder.Create()
+    .SetCode('r')
+    .SetMaterial(ShapeShaderMaterialType.NormalColor)
+    .Build("Color.Red");
+```
+
+Default material: `ShapeShaderMaterialType.NormalColor`.
+
+**`MetaShapeColor` only owns code and material.** Render data (per-visualization-scheme `MetaShapeColorRenderData` and display `Color`) is held by `MetaShapeColorScheme`, not the color itself. Configure rendering via `MetaShapeColorSchemeBuilder`.
+
+Clone entry point: `CloneFrom(MetaShapeColor original)`
+
 ### MetaShapeColorSchemeBuilder
+
+**CloneFrom is the recommended path.** Color schemes have complex visualization data (`MetaShapeColorVisualizationScheme` per `ColorVisualizationSchemeType`) that is difficult to construct manually. `CloneFrom` now deep-clones the visualization scheme objects so modifications don't affect the original.
 
 ```csharp
 var scheme = MetaShapeColorSchemeBuilder.CloneFrom(originalScheme)
     .ClearColors()
     .SetDefaultColor(red)
-    .AddPrimaryColor(red)
-    .AddPrimaryColor(blue)
-    .AddSecondaryColor(green)
-    .AddPlayerObtainableColor(red)
-    .AddPlayerObtainableColor(blue)
-    .AddPlayerObtainableColor(green)
-    .AddMixResult(red, blue, green)
+    .AddColor(red, MetaShapeColorSchemeBuilder.ColorType.Primary)
+    .AddColor(blue, MetaShapeColorSchemeBuilder.ColorType.Primary)
+    .AddColor(cyan, MetaShapeColorSchemeBuilder.ColorType.Secondary)
+    // Fill all unspecified color pairs with a default result
+    .SetDefaultMixResult()
     .Build("ColorScheme.MyScheme");
 ```
 
-**CloneFrom is the recommended path.** Color schemes have complex visualization data (`MetaShapeColorVisualizationScheme` per `ColorVisualizationSchemeType`) that is difficult to construct manually. Clone from an existing scheme, then modify colors and mixing rules.
+#### Color registration
 
-When using `Create()`, you must supply visualization schemes via `SetVisualizationScheme(type, scheme)`.
+Three equivalent styles — individual methods, typed `AddColor`, or both:
+
+```csharp
+// Individual list methods
+builder.AddPrimaryColor(red).AddSecondaryColor(blue);
+
+// Typed registration — routes to the correct list by ColorType, optionally player-obtainable
+builder.AddColor(red, MetaShapeColorSchemeBuilder.ColorType.Primary, playerObtainable: true);
+builder.AddColor(blue, MetaShapeColorSchemeBuilder.ColorType.Secondary, playerObtainable: false);
+
+// Player-obtainable can also be set separately
+builder.AddPlayerObtainableColor(red);
+```
+
+#### Mixing rules
+
+```csharp
+// Explicit per-pair results
+builder.AddMixResult(red, blue, green);
+
+// Fill all as-yet-unspecified color pairs with a default (falls back to DefaultColor)
+builder.SetDefaultMixResult();               // uses DefaultColor
+builder.SetDefaultMixResult(someColor);      // explicit
+```
+
+#### Render data (visualization schemes)
+
+The data model: `MetaShapeColorScheme` → `VisualizationSchemes[SchemeType]` → `RenderData[MetaShapeColor]` → `{Color, MetaShapeColorRenderData}`. Four scheme types exist (`RGB`, `RYB`, `CMYK`, `RGBColorBlind`).
+
+```csharp
+// Set the entire visualization scheme for a type (required when using Create)
+builder.SetVisualizationScheme(ColorVisualizationSchemeType.RGB, myRgbScheme);
+
+// Set full render data (Color + MetaShapeColorRenderData) per scheme
+builder.SetRenderData(red, new Dictionary<ColorVisualizationSchemeType, MetaShapeColorVisualizationScheme.ColorRenderData>
+{
+    [ColorVisualizationSchemeType.RGB] = new MetaShapeColorVisualizationScheme.ColorRenderData
+    {
+        Color = Color.red,
+        RenderData = myRenderData,
+    },
+});
+
+// Change only the display Color, preserving existing MetaShapeColorRenderData
+builder.SetRenderColor(red, new Dictionary<ColorVisualizationSchemeType, Color>
+{
+    [ColorVisualizationSchemeType.RGB] = Color.red,
+    [ColorVisualizationSchemeType.CMYK] = new Color(0.1f, 0.8f, 0.2f),
+});
+
+// Copy all render-data entries from one color to another
+builder.CopyVisualizationScheme(originalRed, newRed);
+```
+
+When using `Create()`, you must supply visualization schemes via `SetVisualizationScheme(type, scheme)`. When using `CloneFrom`, existing visualization data is preserved and deep-cloned.
 
 ## Project Structure
 
@@ -273,8 +327,7 @@ CustomGameDataLoader/
 ├── CustomGameDataLoader.csproj
 ├── CustomGameDataLoaderMod.cs      (mod entry point + detour)
 ├── CustomGameDataRegistrar.cs      (IGameDataHelper + registrar)
-├── manifest.json
-└── Resources/
+└── manifest.json
 ```
 
 ## Dependencies
@@ -283,4 +336,6 @@ CustomGameDataLoader/
 - **MonoMod.RuntimeDetour** — detour runtime
 - **Krafs.Publicizer** — compile-time access to `GameData` private fields and `GameIconCollection` internals
 - **UniTask** — async return type matching
+- **Game.Core.Content** — `BuildingDefinitionGroupId`
+- **Game.Core.HUD** — `HudVideoMarkerPosition`
 - **Core.Localization** — `IText`, `LazyLocalizedText`, `TranslationId`

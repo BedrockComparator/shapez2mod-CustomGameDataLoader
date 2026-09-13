@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Game.Core.HUD;
 using Game.Core.Research;
 using UnityEngine;
 using UnityEngine.Video;
@@ -105,7 +106,7 @@ namespace CustomResourcesLoader.Builders
             private float _startTimeMs;
             private float _durationMs;
             private bool _visibleWhileHidden;
-            private HUDVideoMarkerPosition _position;
+            private HudVideoMarkerPosition _position;
 
             /// <summary>Set the input keybinding hint ID (e.g. "interact.confirm").</summary>
             public MarkerBuilder SetKeybinding(string keybindingId)
@@ -136,7 +137,7 @@ namespace CustomResourcesLoader.Builders
             }
 
             /// <summary>Screen position of the marker.</summary>
-            public MarkerBuilder SetPosition(HUDVideoMarkerPosition position)
+            public MarkerBuilder SetPosition(HudVideoMarkerPosition position)
             {
                 _position = position;
                 return this;
