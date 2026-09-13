@@ -10,7 +10,7 @@ namespace CustomGameDataLoader
     public class CustomGameDataLoaderMod : IMod
     {
         Hook HookPostfixGameDataInitialization;
-
+        JsonRedirector jsonRedirector = new JsonRedirector();
         public CustomGameDataLoaderMod(Core.Logging.ILogger logger)
         {
             CustomGameDataRegistrar.Logger = logger;
@@ -32,6 +32,7 @@ namespace CustomGameDataLoader
 
         void IDisposable.Dispose()
         {
+            jsonRedirector.Dispose();
             HookPostfixGameDataInitialization?.Dispose();
         }
     }

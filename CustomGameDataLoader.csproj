@@ -131,6 +131,10 @@
 		  <HintPath>$(SPZ2_PATH)\UniTask.dll</HintPath>
 		  <private>False</private>
 		</Reference>
+		<Reference Include="Unity.Core">
+		  <HintPath>$(SPZ2_PATH)\Unity.Core.dll</HintPath>
+		  <private>False</private>
+		</Reference>
 		<Reference Include="Unity.Mathematics">
 			<HintPath>$(SPZ2_PATH)\Unity.Mathematics.dll</HintPath>
 			<private>False</private>
@@ -162,6 +166,8 @@
 		<Publicize Include="SPZGameAssembly:GameIconCollection.AddIcon" />
 		<Publicize Include="SPZGameAssembly:GameIconCollection._Icons" />
 	    <Publicize Include="SPZGameAssembly:EditorDict`2._CachedEntries" />
+
+		<Publicize Include="Unity.Core:IncludePreProcessorSolver.GetTextContentFromPath" />
 	</ItemGroup>
 	<PropertyGroup>
 		<OutputPath>$(SPZ2_PERSISTENT)\mods\CustomGameDataLoader</OutputPath>
