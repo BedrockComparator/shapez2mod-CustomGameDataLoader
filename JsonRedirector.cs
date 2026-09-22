@@ -1,68 +1,53 @@
-﻿using MonoMod.RuntimeDetour;
-using ShapezShifter.SharpDetour;
+using MonoMod.RuntimeDetour;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
-using UnityEngine;
 using Unity.Core;
 
 namespace CustomGameDataLoader
 {
     internal class JsonRedirector : IDisposable
     {
-        private const char ModPathSeparator = '@';
-        private Hook HK_IncludePreProcessorSolver;
+        private readonly Hook HookInclude;
+
         public JsonRedirector()
         {
-            HK_IncludePreProcessorSolver = DetourHelper.StaticReplace(
-                original: path => IncludePreProcessorSolver.GetTextContentFromPath(path),
-                replacement: (string path) => ResolveIncludePath(path)
-            );
-        }
-        public void Dispose()
-        {
-            HK_IncludePreProcessorSolver.Dispose();
-        }
-        private static string ResolveIncludePath(string path)
-        {
-            int separatorIndex = path.IndexOf(ModPathSeparator);
-            if (separatorIndex > 0)
-            {
-                string modClassName = path.Substring(0, separatorIndex);
-                string relativePath = path.Substring(separatorIndex + 1);
-                return LoadFromModDirectory(modClassName, relativePath);
-            }
-            //vanilla behavior
-            TextAsset textAsset = Resources.Load<TextAsset>(path);
-            if (textAsset == null)
-            {
-                throw new Exception("Could not resolve include: " + path);
-            }
-            return textAsset.text;
+            MethodInfo method = typeof(IncludePreProcessorSolver).GetMethod(
+                "GetTextContentFromPath", BindingFlags.Static | BindingFlags.NonPublic);
+
+            HookInclude = new Hook(method, new Func<Func<string, string>, string, string>(
+                (original, path) => Resolve(path, original)));
         }
 
-        private static string LoadFromModDirectory(string modClassName, string relativePath)
+        public void Dispose() => HookInclude.Dispose();
+
+        private static string Resolve(string path, Func<string, string> original)
         {
+            int at = path.IndexOf('@');
+
+            if (at < 0)
+                return original(path);
+
+            string modClassName = path.Substring(0, at);
+            string relativePath = path.Substring(at + 1);
+
             Type modType = FindModType(modClassName);
             if (modType == null)
-            {
                 throw new Exception(
-                    $"Mod class '{modClassName}' not found in any loaded assembly. " +
-                    "Make sure the mod is loaded and the class name matches the mod's IMod implementation.");
-            }
+                    $"Mod class '{modClassName}' not found in any loaded assembly (include '{path}').");
 
-            string modDirectory = Directory.GetParent(modType.Assembly.Location)?.FullName;
-            if (modDirectory == null)
-            {
-                throw new Exception($"Could not determine directory for mod '{modClassName}'.");
-            }
+            string location = modType.Assembly.Location;
+            if (string.IsNullOrEmpty(location))
+                throw new Exception(
+                    $"Assembly for mod class '{modClassName}' has no file location (include '{path}').");
 
+            string modDirectory = Path.GetDirectoryName(location)!;
             string filePath = Path.Combine(modDirectory, relativePath);
+
             if (!File.Exists(filePath))
-            {
-                throw new Exception(
-                    $"File not found: '{filePath}' (resolved from mod class '{modClassName}').");
-            }
+                throw new Exception($"File not found: '{filePath}' (from include '{path}').");
 
             return File.ReadAllText(filePath);
         }
@@ -73,36 +58,46 @@ namespace CustomGameDataLoader
 
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                Type[] types;
-                try
+                foreach (Type type in GetLoadableTypes(assembly))
                 {
-                    types = assembly.GetTypes();
-                }
-                catch (ReflectionTypeLoadException)
-                {
-                    continue;
-                }
-
-                foreach (Type type in types)
-                {
-                    if (type.Name != className)
-                        continue;
-                    if (!typeof(IMod).IsAssignableFrom(type))
+                    if (type.Name != className || !typeof(IMod).IsAssignableFrom(type))
                         continue;
 
                     if (found != null)
-                    {
                         throw new Exception(
                             $"Multiple mod classes named '{className}' found: " +
-                            $"'{found.FullName}' and '{type.FullName}'. " +
-                            "Use a unique mod class name to identify the target mod.");
-                    }
+                            $"'{found.FullName}' and '{type.FullName}'. Use a unique name.");
 
                     found = type;
                 }
             }
 
             return found;
+        }
+
+        /// <summary>
+        /// A sibling manifest.json marks a mod package, which keeps the game and Unity
+        /// assemblies out of the scan. Partial type loads keep their loadable types.
+        /// </summary>
+        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+        {
+            // IsDynamic never throws, Assembly.Location does.
+            if (assembly.IsDynamic)
+                return Enumerable.Empty<Type>();
+
+            string location = assembly.Location;
+            string modDirectory = Path.GetDirectoryName(location)!;
+            if (!File.Exists(Path.Combine(modDirectory, "manifest.json")))
+                return Enumerable.Empty<Type>();
+
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                return ex.Types.Where(t => t != null);
+            }
         }
     }
 }

@@ -10,6 +10,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="MonoMod.RuntimeDetour" Version="25.3.4"/>
 	</ItemGroup>
 	<PropertyGroup>
 		<PublicizerLogFilePath>krafs/log</PublicizerLogFilePath>
@@ -110,10 +111,6 @@
 		<Reference Include="Game.Tutorial">
 			<HintPath>$(SPZ2_PATH)\Game.Tutorial.dll</HintPath>
 			<private>False</private>
-		</Reference>
-		<Reference Include="MonoMod.RuntimeDetour">
-			<HintPath>$(SPZ2_MONODETOUR)</HintPath>
-			<Private>False</Private>
 		</Reference>
 		<Reference Include="ShapezShifter">
 			<HintPath>$(SPZ2_SHIFTER)</HintPath>
