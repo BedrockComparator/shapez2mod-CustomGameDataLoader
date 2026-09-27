@@ -1,19 +1,22 @@
-﻿using Core.Dependency;
+using Core.Dependency;
 using Cysharp.Threading.Tasks;
 using Global.Initialization;
 using MonoMod.RuntimeDetour;
 using ShapezShifter.SharpDetour;
 using System;
 
+using ILogger = Core.Logging.ILogger;
+
 namespace CustomGameDataLoader
 {
     public class CustomGameDataLoaderMod : IMod
     {
         Hook HookPostfixGameDataInitialization;
-        JsonRedirector jsonRedirector = new JsonRedirector();
-        public CustomGameDataLoaderMod(Core.Logging.ILogger logger)
+        JsonRedirector jsonRedirector;
+        public CustomGameDataLoaderMod(ILogger logger)
         {
             CustomGameDataRegistrar.Logger = logger;
+            jsonRedirector = new JsonRedirector();
 
             HookPostfixGameDataInitialization = DetourHelper.CreatePostfixHook<LoadGameDataBlindStep, IDependencyContainer, UniTask>(
                 original: (self, dc) => self.Execute(dc),

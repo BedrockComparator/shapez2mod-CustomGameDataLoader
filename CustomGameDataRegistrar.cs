@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
+using ILogger = Core.Logging.ILogger;
+
 namespace CustomGameDataLoader
 {
     public static class CustomGameDataRegistrar
@@ -23,7 +25,7 @@ namespace CustomGameDataLoader
         /// <summary>
         /// Optional logger. Set before <see cref="OnGameDataInitialize"/> to receive summary output.
         /// </summary>
-        public static Core.Logging.ILogger Logger { get; set; }
+        public static ILogger Logger { get; set; }
 
         // ── Public Interface ──────────────────────────────────
 
@@ -597,15 +599,8 @@ namespace CustomGameDataLoader
             {
                 foreach (var callback in _callbacks)
                 {
-                    try
-                    {
-                        var helper = new GameDataHelper(gameData, tracker);
-                        callback(helper);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw ex;
-                    }
+                    var helper = new GameDataHelper(gameData, tracker);
+                    callback(helper);
                 }
             }
             finally
